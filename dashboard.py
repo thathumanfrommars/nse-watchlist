@@ -25,11 +25,13 @@ st.set_page_config(
 
 # ── PASSWORD PROTECTION ───────────────────────────────────────────────────────
 def check_password():
-    """Simple password gate for private dashboard."""
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
+    """Password gate — persists across reruns using query params."""
+    # Check query param first (persists across reruns)
+    params = st.query_params
+    if params.get("auth") == "ok":
+        st.session_state.authenticated = True
 
-    if st.session_state.authenticated:
+    if st.session_state.get("authenticated"):
         return True
 
     # Login screen
@@ -47,6 +49,7 @@ def check_password():
         if st.button("Login", type="primary", use_container_width=True):
             if pwd == st.secrets.get("DASHBOARD_PASSWORD", "thathumanfrommars2026"):
                 st.session_state.authenticated = True
+                st.query_params["auth"] = "ok"
                 st.rerun()
             else:
                 st.error("Incorrect password")
