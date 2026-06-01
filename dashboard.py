@@ -23,6 +23,45 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ── PASSWORD PROTECTION ───────────────────────────────────────────────────────
+def check_password():
+    """Simple password gate for private dashboard."""
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    # Login screen
+    st.markdown("""
+    <div style="max-width:400px;margin:80px auto;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">📊</div>
+      <h2 style="color:#0D1B2A;margin-bottom:4px">NSE Watchlist</h2>
+      <p style="color:#6B7280;margin-bottom:32px">Private Dashboard — @that_human_from_mars</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        pwd = st.text_input("Password", type="password", placeholder="Enter password")
+        if st.button("Login", type="primary", use_container_width=True):
+            if pwd == st.secrets.get("DASHBOARD_PASSWORD", "thathumanfrommars2026"):
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+        st.markdown("""
+        <div style="text-align:center;margin-top:24px;color:#94A3B8;font-size:12px">
+          Public track record available at<br>
+          <a href="https://track-record-thathumanfrommars.streamlit.app"
+             style="color:#2E5F8A">track-record-thathumanfrommars.streamlit.app</a>
+        </div>""", unsafe_allow_html=True)
+    return False
+
+if not check_password():
+    st.stop()
+
+
 D = st.session_state.dark
 BG   = "#0D1B2A"   if D else "#F8FAFC"
 CARD = "#1A3A5C"   if D else "#FFFFFF"
@@ -152,6 +191,128 @@ def pe_badge(pe):
     elif pe > 20: bg,col,label = "FFF3CD","856404",f"🟡 {pe}x FAIR"
     else:         bg,col,label = "D8F3DC","1B4332",f"✅ {pe}x CHEAP"
     return f'<span style="background:#{bg};color:#{col};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700">{label}</span>'
+
+def upside_pct(ss_target, cmp=None):
+    """Calculate remaining upside from ss_target vs CMP or last known price."""
+    if not ss_target: return None, ""
+    # Use a stored CMP map (approximate last known prices as of May 2026)
+    CMP_MAP = {
+        "GRASIM":3103,"GAIL":192,"PRESTIGE":1620,"RAINBOW CHILDCARE":1250,
+        "BALKRISNA IND":2208,"JSW STEEL":980,"ASHOK LEYLAND":186,
+        "NARAYANA HRUDAY":1250,"GLENMARK PHARMA":1320,"LINDE INDIA":8200,
+        "SUZLON":58,"JK TYRE":318,"ASTRA MICROWAVE":715,"BHARAT RASAYAN":8200,
+        "GOODLUCK INDIA":798,"KEI INDUSTRIES":4548,"ASTRAL":1850,
+        "JINDAL SAW":320,"PFC":412,"CESC":145,"IRCON INTL":185,
+        "BPCL":308,"INDIAMART":7200,"IREDA":188,"COCHIN SHIPYARD":1548,
+        "MFSL":900,"POLYCAB":9465,"HUDCO":185,"VBL":485,
+        "PRINCE PIPES":265,"CENTURY PLY":720,"HAVELLS":1510,"PVR INOX":1290,
+        "SYRMA SGS":1188,"PERSISTENT":5600,"OBEROI REALTY":1850,
+        "INDIAN HOTELS":675,"JSW INFRA":380,"NRB BEARING":390,
+        "PREMIER EXPLOSIVES":714,"BHARTI AIRTEL":1902,"TATA MOTORS":730,
+        "TATA STEEL":158,"CIPLA":1590,"DR REDDY'S":1380,
+        "DIXON TECHNOLOGIES":11200,"TATA POWER":415,"HAL":5100,
+        "DLF":875,"CANARA BANK":110,"HPCL":318,"SOLAR INDUSTRIES":17900,
+        "MTAR TECHNOLOGIES":2100,"POWER GRID":318,"OIL INDIA":490,
+        "PREMIER ENERGIES":820,"SAIL":110,"UNO MINDA":950,
+        "KEC INTERNATIONAL":1020,"DEEPAK NITRITE":2050,"TORRENT POWER":1780,
+        "TITAN":4600,"PIDILITE":3050,"GODREJ CONSUMER":1390,
+        "PAGE INDUSTRIES":46000,"VOLTAS":1400,"SUN PHARMA":1890,
+        "EICHER MOTORS":5050,"ITC":430,"COLGATE":2800,"HINDALCO":680,
+        "DIVI'S LABS":5200,"ASIAN PAINTS":2200,"ONGC":245,
+        "CUMMINS INDIA":3350,"ABB INDIA":5200,"BERGER PAINTS":495,
+        "BRITANNIA":5450,"GODREJ PROPERTIES":2620,"DABUR":575,
+        "MARICO":668,"IPCA LABS":1580,"INFO EDGE":7650,
+        "FORTIS HEALTHCARE":610,"VARROC ENGINEERING":580,
+        "SIEMENS":6600,"BAJAJ FINANCE":9200,"BAJAJ FINSERV":2000,
+        "AXIS BANK":1180,"TECH MAHINDRA":1620,"HCL TECHNOLOGIES":1750,
+        "SBI LIFE":1680,"HDFC LIFE":720,"BHARAT ELECTRONICS":320,
+        "MAX HEALTHCARE":1080,"INTERGLOBE AVIATION":5200,
+        "SHRIRAM FINANCE":680,"MACROTECH DEV":1500,"ULTRATECH CEMENT":11800,
+        "TRENT":6800,"MARUTI SUZUKI":12800,"ULTRATECH CEMENT":11800,
+    }
+    if cmp:
+        price = cmp
+    else:
+        # Try to get from stock name passed in
+        price = CMP_MAP.get(ss_target, None)
+        return None, ""
+    upside = (ss_target - price) / price * 100
+    if upside > 20:   color, icon = "#1B4332", "🟢"
+    elif upside > 5:  color, icon = "#2D6A4F", "🟡"
+    elif upside > -5: color, icon = "#856404", "⚪"
+    else:             color, icon = "#C0392B", "🔴"
+    return upside, f'<span style="color:{color};font-weight:700">{icon} {upside:+.1f}%</span>'
+
+def stock_upside(s):
+    """Get upside % for a stock using stored CMP map."""
+    CMP_MAP = {
+        "GRASIM":3103,"GAIL":192,"PRESTIGE":1620,"RAINBOW CHILDCARE":1250,
+        "BALKRISNA IND":2208,"JSW STEEL":980,"ASHOK LEYLAND":186,
+        "NARAYANA HRUDAY":1250,"GLENMARK PHARMA":1320,"LINDE INDIA":8200,
+        "SUZLON":58,"JK TYRE":318,"ASTRA MICROWAVE":715,
+        "GOODLUCK INDIA":798,"KEI INDUSTRIES":4548,"ASTRAL":1850,
+        "JINDAL SAW":320,"PFC":412,"CESC":145,"IRCON INTL":185,
+        "BPCL":308,"INDIAMART":7200,"IREDA":188,"COCHIN SHIPYARD":1548,
+        "MFSL":900,"POLYCAB":9465,"HUDCO":185,"VBL":485,
+        "PRINCE PIPES":265,"CENTURY PLY":720,"HAVELLS":1510,"PVR INOX":1290,
+        "SYRMA SGS":1188,"PERSISTENT":5600,"OBEROI REALTY":1850,
+        "INDIAN HOTELS":675,"JSW INFRA":380,"NRB BEARING":390,
+        "PREMIER EXPLOSIVES":714,"BHARTI AIRTEL":1902,"TATA MOTORS":730,
+        "TATA STEEL":158,"CIPLA":1590,"DR REDDY'S":1380,
+        "DIXON TECHNOLOGIES":11200,"TATA POWER":415,"HAL":5100,
+        "DLF":875,"CANARA BANK":110,"HPCL":318,"SOLAR INDUSTRIES":17900,
+        "MTAR TECHNOLOGIES":2100,"POWER GRID":318,"OIL INDIA":490,
+        "PREMIER ENERGIES":820,"SAIL":110,"UNO MINDA":950,
+        "KEC INTERNATIONAL":1020,"DEEPAK NITRITE":2050,"TORRENT POWER":1780,
+        "TITAN":4600,"PIDILITE":3050,"GODREJ CONSUMER":1390,
+        "PAGE INDUSTRIES":46000,"VOLTAS":1400,"SUN PHARMA":1890,
+        "EICHER MOTORS":5050,"ITC":430,"COLGATE":2800,"HINDALCO":680,
+        "DIVI'S LABS":5200,"ASIAN PAINTS":2200,"ONGC":245,
+        "CUMMINS INDIA":3350,"ABB INDIA":5200,"BERGER PAINTS":495,
+        "BRITANNIA":5450,"GODREJ PROPERTIES":2620,"DABUR":575,
+        "MARICO":668,"IPCA LABS":1580,"INFO EDGE":7650,
+        "FORTIS HEALTHCARE":610,"VARROC ENGINEERING":580,
+        "SIEMENS":6600,"BAJAJ FINANCE":9200,"BAJAJ FINSERV":2000,
+        "AXIS BANK":1180,"TECH MAHINDRA":1620,"HCL TECHNOLOGIES":1750,
+        "SBI LIFE":1680,"HDFC LIFE":720,"BHARAT ELECTRONICS":320,
+        "MAX HEALTHCARE":1080,"INTERGLOBE AVIATION":5200,
+        "SHRIRAM FINANCE":680,"MACROTECH DEV":1500,
+        "TRENT":6800,"MARUTI SUZUKI":12800,"ULTRATECH CEMENT":11800,
+    }
+    target = s.get("ss_target")
+    cmp    = CMP_MAP.get(s["name"])
+    if not target or not cmp: return None, "—"
+    upside = (target - cmp) / cmp * 100
+    if upside > 20:   icon = "🟢"
+    elif upside > 5:  icon = "🟡"
+    elif upside > -5: icon = "⚪"
+    else:             icon = "🔴"
+    return upside, f"{icon} {upside:+.1f}%"
+
+
+def is_market_open():
+    """Check if NSE market is currently open."""
+    now = datetime.now()
+    if now.weekday() >= 5: return False  # Weekend
+    market_open  = now.replace(hour=9,  minute=15, second=0)
+    market_close = now.replace(hour=15, minute=30, second=0)
+    return market_open <= now <= market_close
+
+def market_status_badge():
+    if is_market_open():
+        return '<span style="background:#D8F3DC;color:#1B4332;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700">🟢 Market Open</span>'
+    return '<span style="background:#FDDCDC;color:#C0392B;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700">🔴 Market Closed</span>'
+
+def contrarian_flag(s):
+    """Flag stocks where my rating diverges from sell-side consensus."""
+    ss = s.get("ss_rating","")
+    me = s.get("ind_rating","")
+    if ss in ("BUY","STRONG BUY") and me in ("REDUCE","AVOID"):
+        return "🔴 Contrarian BEAR"
+    if ss in ("SELL","REDUCE") and me in ("BUY","STRONG BUY","ACCUMULATE"):
+        return "🟢 Contrarian BULL"
+    return ""
+
 
 TODAY = date.today()
 
@@ -372,13 +533,17 @@ elif page == "🗓 Results Calendar":
         eps_beat=None
         if s.get("act_eps") and s.get("est_eps") and s["est_eps"]!=0:
             eps_beat=(s["act_eps"]-s["est_eps"])/abs(s["est_eps"])*100
+        target = s.get("ss_target")
+        upside_pct = None  # Will be fetched live — shown as target for now
         rows.append({
             "Score":f"{watchlist_score(s):.1f}/10",
             "Company":s["name"],"Sector":s["sector"][:22],
             "Result Date":s["result_date"],"Status":s["status"],
             "Est. EPS":s.get("est_eps"),"Act. EPS":s.get("act_eps") or "Pending",
             "Beat %":f"{eps_beat:+.1f}%" if eps_beat is not None else "—",
+            "SS Target":f"₹{target:,}" if target else "—",
             "My Rating":s["ind_rating"],"Risk":s["risk"],
+            "PE":pe_badge(s.get("pe_ratio")),
         })
     df=pd.DataFrame(rows)
     def cs(v):
@@ -397,6 +562,11 @@ elif page == "🗓 Results Calendar":
             elif n>=5: return "background-color:#FFF3CD;color:#856404;font-weight:700"
             else: return "background-color:#FDDCDC;color:#C0392B;font-weight:700"
         except: return ""
+    def cup(v):
+        if "🟢" in str(v): return "color:#1B4332;font-weight:700"
+        elif "🟡" in str(v): return "color:#856404;font-weight:700"
+        elif "🔴" in str(v): return "color:#C0392B;font-weight:700"
+        return ""
     st.dataframe(df.style.map(cs,subset=["Status"]).map(cr,subset=["My Rating"])
                  .map(cb,subset=["Beat %"]).map(csc,subset=["Score"]),
                  use_container_width=True, hide_index=True, height=700)
@@ -461,6 +631,27 @@ elif page == "🎯 Post-Result Tracker":
             c4.metric("Act. Rev",f"₹{s.get('act_rev','—'):,}Cr" if s.get('act_rev') else "—",f"{rev_b:+.1f}%" if rev_b else None)
             c5.metric("Upside",s.get("upside_captured") or "—")
             st.markdown(rb(s["ind_rating"],13) + "  " + pe_badge(s.get("pe_ratio")), unsafe_allow_html=True)
+            # Before vs After card
+            if eps_b is not None:
+                beat_icon = "✅ BEAT" if eps_b > 0 else "❌ MISS"
+                beat_color = "#1B4332" if eps_b > 0 else "#C0392B"
+                beat_bg    = "#D8F3DC" if eps_b > 0 else "#FDDCDC"
+                st.markdown(f"""
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0">
+                  <div style="background:#F0F9FF;border-radius:10px;padding:14px;border:1px solid #BAE6FD">
+                    <div style="font-size:11px;color:#0369A1;font-weight:600;margin-bottom:6px">📌 PRE-RESULT VIEW</div>
+                    <div style="font-weight:700">{s["ind_rating"]}</div>
+                    <div style="font-size:12px;color:#555;margin-top:4px">Est. EPS: ₹{s.get("est_eps","—"):.2f if isinstance(s.get("est_eps"),(int,float)) else "—"}</div>
+                    <div style="font-size:12px;color:#555">Target: ₹{s.get("ss_target","—"):,}</div>
+                  </div>
+                  <div style="background:{beat_bg};border-radius:10px;padding:14px;border:1px solid {beat_color}40">
+                    <div style="font-size:11px;color:{beat_color};font-weight:600;margin-bottom:6px">📊 ACTUAL RESULT</div>
+                    <div style="font-weight:700;color:{beat_color}">{beat_icon} {eps_b:+.1f}%</div>
+                    <div style="font-size:12px;color:#555;margin-top:4px">Act. EPS: ₹{s.get("act_eps","—"):.2f if isinstance(s.get("act_eps"),(int,float)) else "—"}</div>
+                    <div style="font-size:12px;color:#555">Upside: {stock_upside(s)[1]}</div>
+                  </div>
+                </div>""", unsafe_allow_html=True)
+
             st.markdown("**📢 Earnings Commentary**")
             st.markdown(f'<div class="commentary-box">{s.get("earnings_commentary","—")}</div>', unsafe_allow_html=True)
             st.markdown("**⚖️ Independent View**")
@@ -626,6 +817,60 @@ elif page == "🏆 Track Record":
         st.dataframe(df_p.style.map(cpr,subset=["Rating"]).map(cav,subset=["Avg Return"]),
                      use_container_width=True, hide_index=True)
 
+
+    st.markdown("---")
+    st.markdown("### 🔄 Sector Rotation Tracker")
+    st.caption("Which sectors beat estimates — builds across seasons for pattern recognition")
+
+    from collections import defaultdict
+    sector_data = defaultdict(lambda: {"beats":0,"total":0})
+    declared_all = [s for s in STOCKS if s["status"]=="Declared"]
+    for s in declared_all:
+        if s.get("act_eps") and s.get("est_eps"):
+            sec = s["sector"].split("(")[0].strip().split("/")[0].strip()[:20]
+            sector_data[sec]["total"] += 1
+            if s["act_eps"] > s["est_eps"]: sector_data[sec]["beats"] += 1
+
+    sec_sorted = sorted(sector_data.items(),
+                        key=lambda x: x[1]["beats"]/max(x[1]["total"],1), reverse=True)
+
+    for sec, d in sec_sorted:
+        rate  = d["beats"]/d["total"]*100
+        color = "#1B4332" if rate>=75 else "#856404" if rate>=50 else "#C0392B"
+        bg    = "#D8F3DC" if rate>=75 else "#FFF3CD" if rate>=50 else "#FDDCDC"
+        bar   = int(rate)
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div style="width:160px;font-size:12px;font-weight:500;flex-shrink:0">{sec}</div>
+          <div style="flex:1;background:#E5E7EB;border-radius:999px;height:10px">
+            <div style="background:{color};width:{bar}%;height:10px;border-radius:999px"></div>
+          </div>
+          <div style="width:80px;text-align:right">
+            <span style="background:{bg};color:{color};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700">{rate:.0f}%</span>
+          </div>
+          <div style="width:60px;font-size:11px;color:#6B7280">{d["beats"]}/{d["total"]}</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 🔍 Contrarian Calls")
+    st.caption("Stocks where my rating diverges significantly from sell-side consensus")
+    contrarians = [(s, contrarian_flag(s)) for s in STOCKS if contrarian_flag(s)]
+    if contrarians:
+        for s, flag in contrarians:
+            rat_bg_ = RATING_BG.get(s["ind_rating"],"#F3F4F6")
+            rat_col_= RATING_COLORS.get(s["ind_rating"],"#374151")
+            color_  = "#C0392B" if "BEAR" in flag else "#1B4332"
+            st.markdown(f"""
+            <div style="background:white;border-radius:8px;padding:10px 16px;margin-bottom:6px;
+                        border-left:4px solid {color_};box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+              <b>{s["name"]}</b> &nbsp;
+              <span style="background:{rat_bg_};color:{rat_col_};padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700">{s["ind_rating"]}</span>
+              &nbsp;vs SS: <b>{s.get("ss_rating","—")}</b> &nbsp;
+              <span style="float:right;font-weight:700;color:{color_}">{flag}</span>
+            </div>""", unsafe_allow_html=True)
+    else:
+        st.info("No strong contrarian divergences currently.")
+
     st.markdown("---")
     st.markdown("""
     > **Note:** This is Q4 FY26 season data only (Apr–May 2026).
@@ -772,6 +1017,47 @@ elif page == "🔬 Stock Deep Dive":
                 </div>""", unsafe_allow_html=True)
     else:
         st.caption("No sector peers found in watchlist.")
+
+    st.markdown("---")
+    st.markdown("#### 🧮 Position Sizing Calculator")
+    ps_col1, ps_col2 = st.columns(2)
+    with ps_col1:
+        invest_amt = st.number_input("Amount to invest (₹)", min_value=1000,
+                                      max_value=10000000, value=100000, step=10000,
+                                      key=f"ps_{s['name']}")
+    with ps_col2:
+        cmp_input = st.number_input("CMP (₹)", min_value=1.0, value=float(
+            next((v for k,v in [
+                ("PERSISTENT",5600),("POLYCAB",9465),("KEI INDUSTRIES",4548),
+                ("BHARTI AIRTEL",1902),("CIPLA",1590),("INDIAN HOTELS",675),
+                ("TATA POWER",415),("SOLAR INDUSTRIES",17900),("SYRMA SGS",1188),
+            ] if k==s["name"]), 1000)), step=1.0, key=f"cmp_{s['name']}")
+
+    target = s.get("ss_target")
+    if target and cmp_input > 0:
+        shares    = int(invest_amt / cmp_input)
+        cost      = shares * cmp_input
+        target_val= shares * target
+        upside_val= target_val - cost
+        stop_loss = cmp_input * 0.90
+        sl_val    = shares * stop_loss
+        sl_loss   = sl_val - cost
+        rr_ratio  = upside_val / abs(sl_loss) if sl_loss != 0 else 0
+
+        k1,k2,k3,k4 = st.columns(4)
+        k1.metric("Shares",      f"{shares:,}")
+        k2.metric("Total Cost",  f"₹{cost:,.0f}")
+        k3.metric("At Target",   f"₹{target_val:,.0f}", f"₹{upside_val:+,.0f}")
+        k4.metric("At -10% SL",  f"₹{sl_val:,.0f}",    f"₹{sl_loss:+,.0f}")
+
+        rr_color = "#1B4332" if rr_ratio >= 2 else "#856404" if rr_ratio >= 1 else "#C0392B"
+        st.markdown(f"""
+        <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px;margin-top:8px;
+                    border-left:4px solid {rr_color}">
+          <b>Risk:Reward = 1:{rr_ratio:.1f}</b>
+          {'✅ Good setup (>1:2)' if rr_ratio>=2 else '⚠️ Acceptable (1:1 to 1:2)' if rr_ratio>=1 else '❌ Poor risk-reward (<1:1)'}
+          &nbsp;|&nbsp; Stop Loss at ₹{stop_loss:,.2f} (10% below CMP)
+        </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
     wa_url="https://wa.me/?text="+urllib.parse.quote(share_text(s))
@@ -938,6 +1224,43 @@ elif page == "📸 Instagram Export":
         wa_url="https://wa.me/?text="+urllib.parse.quote(custom)
         st.markdown(f'<a href="{wa_url}" target="_blank" style="background:#25D366;color:white;padding:8px 20px;border-radius:6px;text-decoration:none;font-weight:600">📲 Share via WhatsApp</a>', unsafe_allow_html=True)
 
+    with tab5:
+        st.markdown("### 📅 Weekly Recap Carousel")
+        st.caption("Every Friday — 5-slide summary ready to post")
+
+        week_beats   = [s for s in declared if s.get("act_eps") and s.get("est_eps") and s["act_eps"]>s["est_eps"]]
+        week_misses  = [s for s in declared if s.get("act_eps") and s.get("est_eps") and s["act_eps"]<s["est_eps"]]
+        top3_week    = sorted(buy_rows, key=lambda x:-x["ret_pct"])[:3]
+        next_week    = [s for s in STOCKS if s["status"]=="Pending"][:5]
+
+        week_summary = (
+            f"📊 Weekly Market Recap — {datetime.now().strftime('%d %b %Y')}\n\n"
+            f"RESULTS THIS WEEK:\n"
+            f"✅ {len(week_beats)} companies beat estimates\n"
+            f"❌ {len(week_misses)} companies missed estimates\n\n"
+            f"TOP CALLS THIS WEEK:\n"
+            + "\n".join(f"{'✅' if r['ret_pct']>=0 else '❌'} #{r['name'].replace(' ','')}: {r['ret_pct']*100:+.1f}%" for r in top3_week)
+            + f"\n\nWATCH NEXT WEEK:\n"
+            + "\n".join(f"📅 #{s['name'].replace(' ','')} — {s['result_date']}" for s in next_week)
+            + f"\n\nFull analysis 👇\nnse-watchlist-thathumanfrommars.streamlit.app\n\n"
+            f"#WeeklyRecap #NSE #StockMarket #Q4FY26 #IndianStocks #thathumanfrommars"
+        )
+        st.code(week_summary, language=None)
+        st.markdown("👆 Copy this weekly recap caption | Create a carousel with these stats on Canva")
+
+        st.markdown("""
+        **5-slide carousel template:**
+        - **Slide 1:** Season scorecard (use Season Scorecard tab)
+        - **Slide 2:** This week's beats vs misses
+        - **Slide 3:** Top 3 calls this week
+        - **Slide 4:** Next week's key results
+        - **Slide 5:** Your independent rating + link
+        """)
+
+        wa_url_weekly = "https://wa.me/?text=" + urllib.parse.quote(week_summary)
+        st.markdown(f'<a href="{wa_url_weekly}" target="_blank" style="background:#25D366;color:white;padding:8px 20px;border-radius:6px;text-decoration:none;font-weight:600">📲 Share Weekly Recap via WhatsApp</a>', unsafe_allow_html=True)
+
+
 elif page == "⚙️ Live Prices":
     st.markdown("## ⚙️ Live Prices")
     st.caption("Yahoo Finance (NSE). ~15 min delay.")
@@ -948,14 +1271,19 @@ elif page == "⚙️ Live Prices":
             t=TICKER_MAP.get(s["name"])
             prog.progress((i+1)/len(fstocks),text=f"Fetching {s['name']}...")
             row={"Company":s["name"],"My Rating":s["ind_rating"],
-                 "CMP":"—","Chg %":"—","52W H":"—","52W L":"—","P/E":"—","Status":s["status"]}
+                 "CMP":"—","Chg %":"—",
+                 "SS Target":f"₹{s.get('ss_target'):,}" if s.get("ss_target") else "—",
+                 "Upside %":"—","52W H":"—","52W L":"—","P/E":"—","Status":s["status"]}
             if t:
                 try:
                     info=yf.Ticker(t).info
                     p=info.get("currentPrice") or info.get("regularMarketPrice")
                     c=info.get("regularMarketChangePercent")
+                    target_p=s.get("ss_target")
+                    upside=f"{(target_p/p-1)*100:+.1f}%" if (target_p and p and p>0) else "—"
                     row.update({"CMP":f"₹{p:,.2f}" if p else "—",
                                 "Chg %":f"{c:+.2f}%" if c else "—",
+                                "Upside %":upside,
                                 "52W H":f"₹{info.get('fiftyTwoWeekHigh'):,.0f}" if info.get('fiftyTwoWeekHigh') else "—",
                                 "52W L":f"₹{info.get('fiftyTwoWeekLow'):,.0f}" if info.get('fiftyTwoWeekLow') else "—",
                                 "P/E":f"{info.get('trailingPE'):.1f}x" if info.get('trailingPE') else "—"})
@@ -971,7 +1299,13 @@ elif page == "⚙️ Live Prices":
                 return "color:#1B4332;font-weight:600" if n>=0 else "color:#C0392B;font-weight:600"
             except: return ""
         def crr(v): return f"background-color:{RATING_BG.get(v,'#F3F4F6')};color:{RATING_COLORS.get(v,'#374151')};font-weight:600"
-        st.dataframe(df_lp.style.map(ccg,subset=["Chg %"]).map(crr,subset=["My Rating"]),
+        def cup(v):
+            if v=="—": return ""
+            try:
+                n=float(v.replace("%","").replace("+",""))
+                return "color:#1B4332;font-weight:600" if n>0 else "color:#C0392B;font-weight:600"
+            except: return ""
+        st.dataframe(df_lp.style.map(ccg,subset=["Chg %"]).map(cup,subset=["Upside %"]).map(crr,subset=["My Rating"]),
                      use_container_width=True,hide_index=True,height=800)
         st.success(f"✅ {len(rows_lp)} stocks at {datetime.now().strftime('%H:%M:%S')}")
     else:
