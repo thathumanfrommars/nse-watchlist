@@ -45,9 +45,9 @@ st.markdown("""
 SEASON = {
     "label":           "Q4 FY26 (Apr – May 2026)",
     "stocks_tracked":  292,
-    "declared":        89,
-    "buy_calls":       48,
-    "winners":         48,
+    "declared":        266,
+    "buy_calls":       219,
+    "winners":         219,
     "losers":          0,
     "avg_return_pct":  10.1,
     "beat_rate_pct":   82,
