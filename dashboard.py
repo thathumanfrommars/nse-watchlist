@@ -24,45 +24,6 @@ st.set_page_config(
 )
 
 # ── PASSWORD PROTECTION ───────────────────────────────────────────────────────
-def check_password():
-    """Password gate — persists across reruns using query params."""
-    # Check query param first (persists across reruns)
-    params = st.query_params
-    if params.get("auth") == "ok":
-        st.session_state.authenticated = True
-
-    if st.session_state.get("authenticated"):
-        return True
-
-    # Login screen
-    st.markdown("""
-    <div style="max-width:400px;margin:80px auto;text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">📊</div>
-      <h2 style="color:#0D1B2A;margin-bottom:4px">NSE Watchlist</h2>
-      <p style="color:#6B7280;margin-bottom:32px">Private Dashboard — @that_human_from_mars</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        pwd = st.text_input("Password", type="password", placeholder="Enter password")
-        if st.button("Login", type="primary", use_container_width=True):
-            if pwd == st.secrets.get("DASHBOARD_PASSWORD", "thathumanfrommars2026"):
-                st.session_state.authenticated = True
-                st.query_params["auth"] = "ok"
-                st.rerun()
-            else:
-                st.error("Incorrect password")
-        st.markdown("""
-        <div style="text-align:center;margin-top:24px;color:#94A3B8;font-size:12px">
-          Public track record available at<br>
-          <a href="https://track-record-thathumanfrommars.streamlit.app"
-             style="color:#2E5F8A">track-record-thathumanfrommars.streamlit.app</a>
-        </div>""", unsafe_allow_html=True)
-    return False
-
-if not check_password():
-    st.stop()
 
 
 D = st.session_state.dark
