@@ -605,13 +605,13 @@ elif page == "🎯 Post-Result Tracker":
                   <div style="background:#F0F9FF;border-radius:10px;padding:14px;border:1px solid #BAE6FD">
                     <div style="font-size:11px;color:#0369A1;font-weight:600;margin-bottom:6px">📌 PRE-RESULT VIEW</div>
                     <div style="font-weight:700">{s["ind_rating"]}</div>
-                    <div style="font-size:12px;color:#555;margin-top:4px">Est. EPS: ₹{s.get("est_eps","—"):.2f if isinstance(s.get("est_eps"),(int,float)) else "—"}</div>
-                    <div style="font-size:12px;color:#555">Target: ₹{s.get("ss_target","—"):,}</div>
+                    <div style="font-size:12px;color:#555;margin-top:4px">Est. EPS: {"₹"+f"{s['est_eps']:.2f}" if isinstance(s.get("est_eps"),(int,float)) else "—"}</div>
+                    <div style="font-size:12px;color:#555">Target: {"₹"+f"{s['ss_target']:,}" if s.get("ss_target") else "—"}</div>
                   </div>
                   <div style="background:{beat_bg};border-radius:10px;padding:14px;border:1px solid {beat_color}40">
                     <div style="font-size:11px;color:{beat_color};font-weight:600;margin-bottom:6px">📊 ACTUAL RESULT</div>
                     <div style="font-weight:700;color:{beat_color}">{beat_icon} {eps_b:+.1f}%</div>
-                    <div style="font-size:12px;color:#555;margin-top:4px">Act. EPS: ₹{s.get("act_eps","—"):.2f if isinstance(s.get("act_eps"),(int,float)) else "—"}</div>
+                    <div style="font-size:12px;color:#555;margin-top:4px">Act. EPS: {"₹"+f"{s['act_eps']:.2f}" if isinstance(s.get("act_eps"),(int,float)) else "—"}</div>
                     <div style="font-size:12px;color:#555">Upside: {stock_upside(s)[1]}</div>
                   </div>
                 </div>""", unsafe_allow_html=True)
