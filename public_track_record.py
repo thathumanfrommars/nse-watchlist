@@ -44,8 +44,8 @@ st.markdown("""
 # ── SEASON DATA ───────────────────────────────────────────────────────────────
 SEASON = {
     "label":           "Q4 FY26 (Apr – May 2026)",
-    "stocks_tracked":  115,
-    "declared":        58,
+    "stocks_tracked":  292,
+    "declared":        89,
     "buy_calls":       48,
     "winners":         48,
     "losers":          0,
@@ -123,20 +123,30 @@ st.markdown(f"""
 st.markdown('<div class="section-title">📊 Season Overview — Q4 FY26</div>',
             unsafe_allow_html=True)
 
-c1,c2,c3,c4,c5 = st.columns(5)
-stats = [
-    (c1, f"{SEASON['stocks_tracked']}", "Stocks Tracked", "#2E5F8A"),
-    (c2, f"{SEASON['declared']}",        "Results Declared","#0D1B2A"),
-    (c3, f"{SEASON['avg_return_pct']:+.1f}%","Avg Return","#1B4332"),
-    (c4, f"{SEASON['beat_rate_pct']}%", "EPS Beat Rate",  "#856404"),
-    (c5, f"{SEASON['holding_days']}d",  "Avg Hold Period","#7C3AED"),
-]
-for col, num, lbl, color in stats:
-    with col:
-        st.markdown(f"""<div class="stat-card">
-          <div class="stat-num" style="color:{color}">{num}</div>
-          <div class="stat-lbl">{lbl}</div>
-        </div>""", unsafe_allow_html=True)
+st.markdown(f"""
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px">
+  <div class="stat-card">
+    <div class="stat-num" style="color:#2E5F8A">{SEASON['stocks_tracked']}</div>
+    <div class="stat-lbl">STOCKS TRACKED</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#0D1B2A">{SEASON['declared']}</div>
+    <div class="stat-lbl">RESULTS DECLARED</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#1B4332">+{SEASON['avg_return_pct']:.1f}%</div>
+    <div class="stat-lbl">AVG RETURN</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#856404">{SEASON['beat_rate_pct']}%</div>
+    <div class="stat-lbl">EPS BEAT RATE</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#7C3AED">{SEASON['holding_days']}d</div>
+    <div class="stat-lbl">AVG HOLD PERIOD</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -218,7 +228,7 @@ st.markdown('<div class="section-title">📋 How I Pick Stocks</div>', unsafe_al
 st.markdown("""
 <div class="methodology-box">
   <b>My background:</b> Chartered Accountant with credit and due diligence experience at a major Indian bank.
-  I analyse 115+ NSE-listed companies every results season (4x per year).<br><br>
+  I analyse 292+ NSE-listed companies every results season (4x per year).<br><br>
 
   <b>What I rate:</b> STRONG BUY → BUY → ACCUMULATE → HOLD → REDUCE → AVOID<br><br>
 
@@ -257,7 +267,7 @@ st.markdown(f"""
   </div>
   <div style="font-size:15px;opacity:0.9;margin-bottom:16px">
     @that_human_from_mars on Instagram<br>
-    Every results season — 115+ stocks tracked, independent ratings, no fluff
+    Every results season — 292+ stocks tracked, independent ratings, no fluff
   </div>
   <div style="font-size:13px;opacity:0.7">
     Updated: {datetime.now().strftime("%d %b %Y")} &nbsp;|&nbsp; Q4 FY26 Season
