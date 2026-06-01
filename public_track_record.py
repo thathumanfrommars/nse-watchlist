@@ -46,10 +46,10 @@ SEASON = {
     "label":           "Q4 FY26 (Apr – May 2026)",
     "stocks_tracked":  292,
     "declared":        266,
-    "buy_calls":       219,
-    "winners":         219,
+    "buy_calls":       50,
+    "winners":         50,
     "losers":          0,
-    "avg_return_pct":  10.1,
+    "avg_return_pct":  10.3,
     "beat_rate_pct":   82,
     "holding_days":    14,
 }
@@ -228,7 +228,7 @@ st.markdown('<div class="section-title">📋 How I Pick Stocks</div>', unsafe_al
 st.markdown("""
 <div class="methodology-box">
   <b>My background:</b> Chartered Accountant with credit and due diligence experience at a major Indian bank.
-  I analyse 292+ NSE-listed companies every results season (4x per year).<br><br>
+  I track 292+ NSE-listed companies each season. Returns shown are for 50 verified calls with actual entry prices and exit data.<br><br>
 
   <b>What I rate:</b> STRONG BUY → BUY → ACCUMULATE → HOLD → REDUCE → AVOID<br><br>
 
